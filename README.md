@@ -1,3 +1,2 @@
 # digitalFab27
-
-Group 27 project files
+Group 27 files in the Intro to Digital Fabrication course
