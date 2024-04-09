@@ -2,7 +2,7 @@
 #define NEOPIXEL_PIN 8
 #define PIXEL_COUNT 4
 
-Adafruit_NeoPixel strip(PIXEL_COUNT, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel strip(PIXEL_COUNT, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ400);
 
 void setup() {
     Serial.begin(9600);
