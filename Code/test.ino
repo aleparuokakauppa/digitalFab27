@@ -5,18 +5,26 @@
 Adafruit_NeoPixel strip(PIXEL_COUNT, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ400);
 
 void setup() {
-    Serial.begin(9600);
     pinMode(NEOPIXEL_PIN, OUTPUT);
-    for (int i = 0; i < PIXEL_COUNT; i++) {
-        Serial.print("Set pixel ");
-        Serial.print(i);
-        Serial.println(" color");
-        strip.setPixelColor(i, 255, 0, 0);
-    }
     strip.begin();
     strip.show();
 }
 
 void loop() {
-    delay(1000);
+    for (int i = 0; i < PIXEL_COUNT; i++) {
+        strip.setPixelColor(i, 255, 0, 0);
+        strip.show();
+        delay(1000);
+    }
+    for (int i = 0; i < PIXEL_COUNT; i++) {
+        strip.setPixelColor(i, 0, 255, 0);
+        strip.show();
+        delay(1000);
+    }
+    for (int i = 0; i < PIXEL_COUNT; i++) {
+        strip.setPixelColor(i, 0, 0, 255);
+        strip.show();
+        delay(1000);
+    }
+    delay(5000);
 }
