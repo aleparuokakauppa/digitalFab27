@@ -1,21 +1,25 @@
 #include <Adafruit_NeoPixel.h>
-#define NEOPIXEL_PIN 9
-#define PIXEL_COUNT 4
+
+#define NEOPIXEL_CONTROL_PIN 9
+#define ACTIVE_PIXEL_COUNT 4
+#define MAX_PIXEL_COUNT 60
 #define TEMP_SENSOR_PIN 28
-#define DIN_PIN 27
+#define BUTTON_PIN 27
 
 /**
  *MAX_ADC 4095
  *MIN_ADC 0
  *MAX_SENSOR_TEMP 125
  *MIN_SENSOR_TEMP -40
+ *cToDigRatio = (MAX_ADC - MIN_ADC) / (MAX_SENSOR_TEMP - MIN_SENSOR_TEMP)
  */
-// (MAX_ADC - MIN_ADC) / (MAX_SENSOR_TEMP - MIN_SENSOR_TEMP) =
 static const double cToDigRatio = 24.81;
+
+static const int ledInterval = 10; // Distance between lit LEDs
 static bool ledState = true;
 static int buttonVal;
 
-Adafruit_NeoPixel strip(PIXEL_COUNT, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel strip(MAX_PIXEL_COUNT, NEOPIXEL_CONTROL_PIN, NEO_GRB + NEO_KHZ800);
 
 int scaledValue(int val, int v1min, int v1max, int v2min, int v2max) {
   int v1range = v1max - v1min;
@@ -29,12 +33,15 @@ float readTemperature() {
 }
 
 /*
-  Sets the pixels for the strip according to if the ledState is true or not
-*/
+ *Sets the pixels for the strip according to if the ledState is true or not
+ */
 void setPixelsUseState(uint8_t red, uint8_t green, uint8_t blue) {
   if (ledState == true) {
-    for (int currPx = 0; currPx < PIXEL_COUNT; currPx++) {
-      strip.setPixelColor(currPx, red, green, blue);
+    for (int i = 0; i < PIXEL_COUNT; i++) {
+      int currPx = i * ledInterval;
+      if (currPx <= MAX_PIXEL_COUNT) {
+          strip.setPixelColor(currPx, red, green, blue);
+      }
     }
   } else {
     strip.clear();
@@ -43,8 +50,8 @@ void setPixelsUseState(uint8_t red, uint8_t green, uint8_t blue) {
 
 void setup() {
   Serial.begin(9600);
-  pinMode(DIN_PIN, INPUT_PULLUP);
-  pinMode(NEOPIXEL_PIN, OUTPUT);
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+  pinMode(NEOPIXEL_CONTROL_PIN, OUTPUT);
   pinMode(TEMP_SENSOR_PIN, INPUT);
   strip.begin();
   strip.show();
@@ -57,8 +64,11 @@ void loop() {
     float currTemp = readTemperature();
     Serial.print("Read temperature as celsius: ");
     Serial.println(currTemp);
+
+    // For color scaling
     const int minTemp = 6;
     const int maxTemp = 14;
+
     int rgbScaled;
     if (currTemp < minTemp) {
       rgbScaled = 0;
@@ -68,14 +78,14 @@ void loop() {
       rgbScaled = scaledValue(static_cast<int>(currTemp), minTemp, maxTemp, 0, 255);
     }
 
-    buttonVal = digitalRead(DIN_PIN);
+    buttonVal = digitalRead(BUTTON_PIN);
     if (buttonVal == 0) {
       ledState = (ledState == true) ? false : true;
       setPixelsUseState(rgbScaled, 255-rgbScaled, 0);
       strip.show();
       // Hang until button is unpressed
       while (buttonVal == 0) {
-        buttonVal = digitalRead(DIN_PIN);
+        buttonVal = digitalRead(BUTTON_PIN);
       }
     }
 
