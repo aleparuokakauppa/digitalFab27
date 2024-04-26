@@ -1,4 +1,5 @@
 #include <Adafruit_NeoPixel.h>
+#include <hardware/adc.h>
 #include <queue>
 
 #define NEOPIXEL_CONTROL_PIN 9
@@ -6,8 +7,8 @@
 #define MAX_PIXEL_COUNT 60
 #define TEMP_SENSOR_PIN 28
 
-static const int minTemp = 5;
-static const int maxTemp = 20;
+static const int minTemp = 10;
+static const int maxTemp = 40;
 
 static const int avgTempSamples = 15;
 std::queue<float> temps;
@@ -55,11 +56,13 @@ float readAvgTemperature() {
 }
 
 float readTemperature() {
-    int reading = analogRead(TEMP_SENSOR_PIN);
-    double voltage = (reading * 3.3) / 4095.0;
+    const float conversion_factor = 3.3f / (1 << 12);
+    uint16_t result = adc_read();
+    Serial.println(result);
+    double voltage = result * conversion_factor;
     Serial.print("Voltage: ");
     Serial.println(voltage);
-    return voltage * 100;
+    return (voltage - 0.5) * 100;
 }
 
 void setPixels(rgbColor newColor) {
@@ -73,6 +76,9 @@ void setPixels(rgbColor newColor) {
 
 void setup() {
     Serial.begin(9600);
+    adc_init();
+    adc_gpio_init(TEMP_SENSOR_PIN);
+    adc_select_input(2);
     pinMode(NEOPIXEL_CONTROL_PIN, OUTPUT);
     pinMode(TEMP_SENSOR_PIN, INPUT);
     strip.begin();
