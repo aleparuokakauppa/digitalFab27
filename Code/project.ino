@@ -46,28 +46,33 @@ void setup() {
     strip.show();
 }
 
+void setColor(float temp) {
+    int r, g, b;
+    if (temp <= 10) {
+        r = static_cast<int>(255 * (1 - temp / 10.0f));
+        g = static_cast<int>(255 * (temp / 10.0f));
+        b = 0;
+    } else {
+        r = 0;
+        g = static_cast<int>(255 * ((20 - temp) / 10.0f));
+        b = static_cast<int>(255 * ((temp - 10) / 10.0f));
+    }
+
+    currColor = {r,g,b};
+}
+
 void loop() {
     float currTemp = readTemperature();
     Serial.println(currTemp);
 
-    // For color scaling
     const int minTemp = 0;
     const int maxTemp = 20;
 
     currTemp = (currTemp < minTemp) ? minTemp : currTemp;
     currTemp = (currTemp > maxTemp) ? maxTemp : currTemp;
 
-    float factorBlue = (10 - currTemp) / 10.f;
-    float factorGreen = 1 - abs(currTemp - 10) / 10.0f;
-    float factorRed = (currTemp - 10) / 10.0f;
-    
-    currColor = {
-        static_cast<int>(255 * factorBlue),
-        static_cast<int>(255 * factorGreen),
-        static_cast<int>(255 * factorRed)
-    };
-
-    setPixelsUseState(currColor);
+    setColor(currTemp);
+    setPixels(currColor);
     strip.show();
 
     // Update rate for temperature change
