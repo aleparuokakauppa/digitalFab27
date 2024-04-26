@@ -5,14 +5,8 @@
 #define MAX_PIXEL_COUNT 60
 #define TEMP_SENSOR_PIN 28
 
-/**
- *MAX_ADC 4095
- *MIN_ADC 0
- *MAX_SENSOR_TEMP 125
- *MIN_SENSOR_TEMP -40
- *cToDigRatio = (MAX_ADC - MIN_ADC) / (MAX_SENSOR_TEMP - MIN_SENSOR_TEMP)
- */
-static const double cToDigRatio = 24.81;
+static const int minTemp = 0;
+static const int maxTemp = 20;
 
 struct rgbColor {
     uint8_t red;
@@ -26,11 +20,13 @@ static const int ledInterval = 10; // Distance between lit LEDs
 Adafruit_NeoPixel strip(MAX_PIXEL_COUNT, NEOPIXEL_CONTROL_PIN, NEO_GRB + NEO_KHZ800);
 
 float readTemperature() {
-    return analogRead(TEMP_SENSOR_PIN) / cToDigRatio;
+    int reading = analogRead(TEMP_SENSOR_PIN);
+    double voltage = (reading * 3.3) / 4095.0;
+    return voltage * 100;
 }
 
 void setPixels(rgbColor newColor) {
-    for (int i = 0; i < PIXEL_COUNT; i++) {
+    for (int i = 0; i < ACTIVE_PIXEL_COUNT; i++) {
         int currPx = i * ledInterval;
         if (currPx <= MAX_PIXEL_COUNT) {
             strip.setPixelColor(currPx, newColor.red, newColor.green, newColor.blue);
@@ -48,14 +44,15 @@ void setup() {
 
 void setColor(float temp) {
     int r, g, b;
-    if (temp <= 10) {
-        r = static_cast<int>(255 * (1 - temp / 10.0f));
-        g = static_cast<int>(255 * (temp / 10.0f));
-        b = 0;
-    } else {
+    float normalizedValue = (value - minTemp) / (maxTemp - minTemp);
+    if (normalizedValue <= 0.5f) {
         r = 0;
-        g = static_cast<int>(255 * ((20 - temp) / 10.0f));
-        b = static_cast<int>(255 * ((temp - 10) / 10.0f));
+        g = static_cast<int>(255 * (2 * normalizedValue));
+        b = static_cast<int>(255 * (1 - 2 * normalizedValue));
+    } else {
+        r = static_cast<int>(255 * (2 * normalizedValue - 1));
+        g = static_cast<int>(255 * (2 - 2 * normalizedValue));
+        b = 0;
     }
 
     currColor = {r,g,b};
@@ -64,9 +61,6 @@ void setColor(float temp) {
 void loop() {
     float currTemp = readTemperature();
     Serial.println(currTemp);
-
-    const int minTemp = 0;
-    const int maxTemp = 20;
 
     currTemp = (currTemp < minTemp) ? minTemp : currTemp;
     currTemp = (currTemp > maxTemp) ? maxTemp : currTemp;
