@@ -4,7 +4,6 @@
 #define ACTIVE_PIXEL_COUNT 4
 #define MAX_PIXEL_COUNT 60
 #define TEMP_SENSOR_PIN 28
-#define BUTTON_PIN 27
 
 /**
  *MAX_ADC 4095
@@ -16,36 +15,21 @@
 static const double cToDigRatio = 24.81;
 
 struct rgbColor {
-    uint8_t red,
-    uint8_t green,
-    uint8_t blue
+    uint8_t red;
+    uint8_t green;
+    uint8_t blue;
 };
 
 static rgbColor currColor = {0, 0, 0};
 static const int ledInterval = 10; // Distance between lit LEDs
-static bool ledState = true;
 
 Adafruit_NeoPixel strip(MAX_PIXEL_COUNT, NEOPIXEL_CONTROL_PIN, NEO_GRB + NEO_KHZ800);
-
-int scaledValue(int val, int v1min, int v1max, int v2min, int v2max) {
-    int v1range = v1max - v1min;
-    int v2range = v2max - v2min;
-    int ratio = v2range / v1range;
-    return (val - v1min) * ratio + v2min;
-}
 
 float readTemperature() {
     return analogRead(TEMP_SENSOR_PIN) / cToDigRatio;
 }
 
-/*
- *Sets the pixels for the strip according to if the ledState is true or not
- */
-void setPixelsUseState(rgbColor newColor) {
-    if (ledState == false) {
-        strip.clear();
-        return;
-    }
+void setPixels(rgbColor newColor) {
     for (int i = 0; i < PIXEL_COUNT; i++) {
         int currPx = i * ledInterval;
         if (currPx <= MAX_PIXEL_COUNT) {
@@ -54,17 +38,10 @@ void setPixelsUseState(rgbColor newColor) {
     }
 }
 
-void buttonInterrupt() {
-    // ledState flip flop
-    ledState = (ledState == true) ? false : true;
-}
-
 void setup() {
     Serial.begin(9600);
-    pinMode(BUTTON_PIN, INPUT_PULLUP);
     pinMode(NEOPIXEL_CONTROL_PIN, OUTPUT);
     pinMode(TEMP_SENSOR_PIN, INPUT);
-    attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), buttonInterrupt, LOW);
     strip.begin();
     strip.show();
 }
@@ -77,25 +54,23 @@ void loop() {
     const int minTemp = 0;
     const int maxTemp = 20;
 
-    int rgbScaled;
-    if (currTemp < minTemp) {
-        rgbScaled = 0;
-    } else if (currTemp > maxTemp) {
-        rgbScaled = 255;
-    } else {
-        rgbScaled = scaledValue(static_cast<int>(currTemp), minTemp, maxTemp, 0, 255);
-    }
+    currTemp = (currTemp < minTemp) ? minTemp : currTemp;
+    currTemp = (currTemp > maxTemp) ? maxTemp : currTemp;
 
+    float factorBlue = (10 - currTemp) / 10.f;
+    float factorGreen = 1 - abs(currTemp - 10) / 10.0f;
+    float factorRed = (currTemp - 10) / 10.0f;
+    
     currColor = {
-        scaledValue(rgbScaled, 0, 255, 100, 255);
-        0,
-        255-rgbScaled
+        static_cast<int>(255 * factorBlue),
+        static_cast<int>(255 * factorGreen),
+        static_cast<int>(255 * factorRed)
     };
 
     setPixelsUseState(currColor);
     strip.show();
 
     // Update rate for temperature change
-    delay(1000);
+    delay(500);
 }
 
