@@ -4,7 +4,7 @@
 
 #define NEOPIXEL_CONTROL_PIN 9
 #define ACTIVE_PIXEL_COUNT 4
-#define MAX_PIXEL_COUNT 60
+#define MAX_PIXEL_COUNT 10
 #define TEMP_SENSOR_PIN 28
 
 static const int minTemp = 10;
@@ -20,7 +20,7 @@ struct rgbColor {
 };
 
 static rgbColor currColor = {0, 0, 0};
-static const int ledInterval = 10; // Distance between lit LEDs
+static const int ledInterval = 3; // Distance between lit LEDs
 
 Adafruit_NeoPixel strip(MAX_PIXEL_COUNT, NEOPIXEL_CONTROL_PIN, NEO_GRB + NEO_KHZ800);
 
